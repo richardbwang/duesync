@@ -19,6 +19,10 @@ days, soonest first, with ⚠️ on anything due within 48 hours (`testDigest()`
 Work blocks (time reserved in free slots) are off by default; set `WORK_BLOCKS: true`
 in `Config.js` to have them booked.
 
+From course websites: CS 103's public HW/Projects/Exams page (bytes.usc.edu) is
+re-read every 6 hours (`COURSE_SITES` in `Config.js`), so new assignments and
+moved dates show up. Codio can't report submissions: rename the deadline to ✅ when done.
+
 From email (Claude Haiku reads USC mail that mentions a date):
 - deadlines and exams → treated like any assignment above
 - required events (things you registered/RSVPed for, interviews) → Coursework calendar
@@ -56,7 +60,7 @@ Secrets live in **Project Settings → Script Properties**:
 ## Functions (run from the Apps Script editor)
 
 `setup()` installs the 10-minute trigger and runs the first sync. `preview()` dry-runs.
-`status()` checks configuration. `testBrightspace()`, `testGradescope()`, `testEmail()`, `testSyllabi()` inspect one source.
+`status()` checks configuration. `testBrightspace()`, `testGradescope()`, `testCourseSites()`, `testEmail()`, `testSyllabi()` inspect one source.
 `rereadSyllabi()` re-reads every syllabus on the next run.
 `uninstall()` stops it.
 

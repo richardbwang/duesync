@@ -3,7 +3,8 @@
  *   setup()        create calendars, install the trigger, first sync
  *   preview()      log what a sync would do, without changing anything
  *   status()       check every piece is configured and working
- *   testBrightspace(), testGradescope(), testEmail(), testSyllabi()  inspect one source
+ *   debugCourseSite()  show how the course page is read, if testCourseSites finds nothing
+ *   testBrightspace(), testGradescope(), testCourseSites(), testEmail(), testSyllabi()  inspect one source
  *   testDigest()   send the morning email now
  *   uninstall()    stop the trigger (calendar events stay)
  */
@@ -61,6 +62,16 @@ function testBrightspace() {
   if (items === null) return console.log('BRIGHTSPACE_ICS_URL not set');
   items.sort(function (a, b) { return a.due - b.due; }).forEach(function (i) {
     console.log(fmt_(i.due, 'EEE MM/dd h:mma') + '  [' + classify_(i).name + '] ' + itemLabel_(i));
+  });
+  console.log(items.length + ' items');
+}
+
+function testCourseSites() {
+  var items = fetchCourseSites_();
+  if (items === null) return console.log('No COURSE_SITES configured');
+  items.sort(function (a, b) { return a.due - b.due; }).forEach(function (i) {
+    console.log(fmt_(i.due, 'EEE MM/dd h:mma') + '  [' + classify_(i).name + '] ' + itemLabel_(i) +
+      (i.extra.late_due ? '  (late until ' + fmt_(new Date(i.extra.late_due), 'EEE MM/dd h:mma') + ')' : ''));
   });
   console.log(items.length + ' items');
 }

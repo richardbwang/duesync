@@ -4,7 +4,7 @@
  */
 
 var GCAL_MAX_REMINDER_MIN = 40320; // Google caps popups at 4 weeks
-var SOURCE_RANK = { gradescope: 0, codio: 1, brightspace: 2, email: 3, syllabus: 4 };
+var SOURCE_RANK = { gradescope: 0, coursesite: 1, codio: 1, brightspace: 2, email: 3, syllabus: 4 };
 
 function classify_(item) {
   var chosen = CONFIG.DEFAULT_TIER, over = {};

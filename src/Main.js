@@ -53,7 +53,8 @@ function runOnce_(ctx) {
   // 2. Brightspace + Gradescope, each on its own cadence, with cached fallback
   var sources = [
     { name: 'brightspace', every: CONFIG.BRIGHTSPACE_EVERY_MINUTES, fetch: ctx.fetchBrightspace || fetchBrightspace_ },
-    { name: 'gradescope', every: CONFIG.GRADESCOPE_EVERY_MINUTES, fetch: ctx.fetchGradescope || fetchGradescope_ }
+    { name: 'gradescope', every: CONFIG.GRADESCOPE_EVERY_MINUTES, fetch: ctx.fetchGradescope || fetchGradescope_ },
+    { name: 'coursesite', every: CONFIG.COURSE_SITE_EVERY_MINUTES, fetch: ctx.fetchCourseSites || fetchCourseSites_ }
   ];
   sources.forEach(function (s) {
     var cacheKey = 'cache_' + s.name;

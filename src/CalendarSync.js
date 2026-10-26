@@ -149,7 +149,7 @@ function changed_(ev, body) {
   return a !== b;
 }
 
-function sourceOf_(uid) { return { gs: 'gradescope', bs: 'brightspace', cd: 'codio', em: 'email', sy: 'syllabus' }[String(uid).split(':')[0]]; }
+function sourceOf_(uid) { return { gs: 'gradescope', by: 'coursesite', bs: 'brightspace', cd: 'codio', em: 'email', sy: 'syllabus' }[String(uid).split(':')[0]]; }
 
 /**
  * @param items  all items from every source (due: Date)

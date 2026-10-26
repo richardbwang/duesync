@@ -31,6 +31,13 @@ var CONFIG = {
     PREFILTER: /\b(due|deadline|exam|midterm|final|quiz|submit|rsvp|register|meeting|event|workshop|fair|talk|seminar|interview|appointment|tomorrow|tonight|today|mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b|\d{1,2}(:\d{2})?\s?(am|pm)|\d{1,2}\/\d{1,2}/i
   },
 
+  // Public course websites, re-read every COURSE_SITE_EVERY_MINUTES.
+  COURSE_SITES: [
+    { KEY: 'cs103', COURSE: 'CSCI 103', URL: 'https://bytes.usc.edu/cs103/assignments/',
+      YEAR: 2026, DUE_TIME: '23:59', EXAM_TIME: '09:30' }   // in-class exams: T/Th 9:30am lecture
+  ],
+  COURSE_SITE_EVERY_MINUTES: 360,
+
   SYLLABUS: {
     ENABLED: true,
     FOLDER_NAME: 'duesync syllabi',         // a folder in your Google Drive; drop syllabus PDFs / Google Docs here
@@ -74,7 +81,7 @@ var CONFIG = {
     { match: /midterm|\bexam\b/i, tier: 'big', label: 'Study', work_hours: 8, start_days_before: 7 },
     { match: /proposal|outline|abstract|annotated bibliography/i, tier: 'medium', work_hours: 3 },
     { match: /presentation/i, tier: 'medium', work_hours: 4 },
-    { match: /project|design product|prototype|\bPA ?\d|programming assignment|final paper|essay/i, tier: 'big' },
+    { match: /project|design product|prototype|\bP[AR] ?\d|programming assignment|final paper|essay/i, tier: 'big' },
     { match: /homework|\bhw ?\d|problem set|\bpset|written assignment/i, tier: 'medium' },
     { match: /quiz|reading|response|discussion|participation|survey|check-?in|lecture|attendance/i, tier: 'small' },
     { min_points: 50, tier: 'big' }

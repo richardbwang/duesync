@@ -208,6 +208,7 @@ test('runOnce: cadence, cache fallback, notifications', () => {
   let bsCalls = 0, gsMode = 'ok';
   const ctx = (now, extra = {}) => ({ cal, gmail: null, now, dryRun: false,
     fetchBrightspace: () => { bsCalls++; return [mk('bs:1', 'HW 6', at('2026-10-30'), { source: 'brightspace', course: 'MATH 229' })]; },
+    fetchCourseSites: () => null,
     fetchGradescope: () => { if (gsMode === 'auth') { const e = new Error('bad'); e.name = 'GsAuthError'; throw e; } return [mk('gs:1:1', 'PA4: Pixel Art', at('2026-11-06'))]; },
     ...extra });
   let r = g.runOnce_(ctx(NOW));
@@ -290,7 +291,7 @@ test('calendar failure after scanning keeps scan progress and labels', () => {
   const gmail = { threads: () => [{ link: 'L', messages: [{ id: 'm1', from: 'p@usc.edu', subject: 'Quiz Friday', date: 'x', body: 'Quiz on Friday Oct 23' }] }],
                   markDone: () => { labeled++; } };
   const badCal = new FakeCal(); badCal.freebusy = () => { throw new Error('boom'); };
-  const ctx = { cal: badCal, gmail, now: NOW, extract: () => { llm++; return []; }, fetchBrightspace: () => null, fetchGradescope: () => null };
+  const ctx = { cal: badCal, gmail, now: NOW, extract: () => { llm++; return []; }, fetchBrightspace: () => null, fetchGradescope: () => null, fetchCourseSites: () => null };
   assert.throws(() => g.runOnce_(ctx), /boom/);
   assert.equal(labeled, 1);
   assert.throws(() => g.runOnce_(ctx), /boom/);
@@ -381,4 +382,79 @@ test('morning digest', () => {
   assert.ok(!/Heads up/.test(d.text));
   assert.match(g.buildDigest_({ upcoming: [] }, now).subject, /Nothing due/);
   assert.match(g.buildDigest_({ lastSync: now - 9 * 3600e3, upcoming: [] }, now).text, /may be out of date/);
+});
+
+test('CS 103 course site: homework, projects (with late window), exams', () => {
+  const g = load();
+  const row = (...c) => '<tr>' + c.map(x => `<td>${x}</td>`).join('') + '</tr>';
+  const html = `<html><body><h1>CSCI 103L - Fall 2026</h1><h2>Exams</h2><table><thead><tr><th>Exam</th><th>Time</th><th>Location</th><th>Info</th></tr></thead><tbody>
+    ${row('Ex1', 'Thursday, September 24th', '(in class)', '<a href="#">Info</a>')}
+    ${row('Ex3', 'Thursday, November 19th', '(in class)', 'Info')}
+    ${row('Ex4', 'Thursday, December 3rd', '(in class)', 'Info')}
+    ${row('Final', 'Saturday, December 12 11am - 1pm', 'TBA', 'Info')}
+    </tbody></table><h2>Homework and Projects</h2><table><tr><th>Item</th><th>Title</th><th>Due (at 11:59PM Pacific)</th></tr>
+    ${row('HW3', 'Classes', 'Friday, Oct. 30th')}
+    ${row('HW4', 'Linked Lists &amp; Vectors', 'Friday, Nov. 6th')}
+    ${row('PR3', 'Maze Search', 'Friday, Nov. 13th')}
+    ${row('PR4', 'Streaming Service', 'Friday, Nov. 27th')}
+    ${row('HW6', 'Recursion', 'Friday, December 4th')}
+    ${row('PR9', 'Not yet released', 'TBA')}
+    </table><h2>Labs</h2><table>${row('1', '8/28', 'Codio', 'Folder')}</table></body></html>`;
+  const site = g.CONFIG.COURSE_SITES[0];
+  const items = g.parseCourseSite_(html, site);
+  const by = Object.fromEntries(items.map(i => [i.title, i]));
+  assert.deepEqual(Object.keys(by).sort(), ['Exam 1', 'Exam 3', 'Exam 4', 'Final Exam', 'HW3: Classes', 'HW4: Linked Lists & Vectors', 'HW6: Recursion', 'PR3: Maze Search', 'PR4: Streaming Service']);
+  assert.equal(by['HW3: Classes'].due.toISOString(), '2026-10-31T06:59:00.000Z');        // Fri 10/30 11:59pm PDT
+  assert.equal(by['PR4: Streaming Service'].due.toISOString(), '2026-11-28T07:59:00.000Z');  // PST
+  assert.equal(by['Exam 3'].due.toISOString(), '2026-11-19T17:30:00.000Z');                // 9:30am PST
+  assert.equal(by['Final Exam'].due.toISOString(), '2026-12-12T19:00:00.000Z');            // 11am PST
+  assert.equal(by['PR3: Maze Search'].extra.late_due, '2026-11-19T08:00:00.000Z');         // 12am morning of Exam 3
+  assert.equal(by['HW3: Classes'].uid, 'by:cs103:HW3');
+  assert.equal(by['HW3: Classes'].course, 'CSCI 103');
+  // Sizing: homework medium, projects big, exams big/study, final 14-day study banner.
+  assert.equal(g.classify_(by['HW3: Classes']).name, 'medium');
+  assert.equal(g.classify_(by['PR3: Maze Search']).name, 'big');
+  assert.equal(g.classify_(by['Exam 3']).label, 'Study');
+  assert.equal(g.classify_(by['Final Exam']).startDays, 14);
+  // Same exam also on Gradescope -> one item.
+  const gsExam = mk('gs:9:1', 'Exam 3', at('2026-11-19', '09:30'));
+  assert.equal(g.dedupe_([by['Exam 3'], gsExam]).length, 1);
+});
+
+test('course site parses real-world HTML with line breaks and nested tags', () => {
+  const g = load();
+  const html = `<table>
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Title</th>
+      <th>Due (at 11:59PM Pacific)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="hw3/">HW3</a></td>
+      <td><strong>Classes</strong>
+      </td>
+      <td>Friday,
+        Oct. 30th</td>
+    </tr>
+    <tr><td>Ex3</td>
+        <td>Thursday, November 19th</td><td>(in class)</td><td><a href="x">Info</a></td></tr>
+  </tbody>
+</table>`;
+  const items = g.parseCourseSite_(html, g.CONFIG.COURSE_SITES[0]);
+  assert.deepEqual(items.map(i => i.title), ['HW3: Classes', 'Exam 3']);
+  assert.equal(items[0].due.toISOString(), '2026-10-31T06:59:00.000Z');
+});
+
+test('course site ignores HTML comments / hidden columns (the real bytes page)', () => {
+  const g = load();
+  const html = `<!-- Regex Trap for ITS Disclaimer --><table><tr><th>Item</th><th>Title</th><th>Start</th><!-- <th>Release</th> --><th>Due (at 11:59PM Pacific)</th></tr>
+  <tr><!-- hidden --><td>HW3</td><td>Classes</td><td></td><!-- <td>Oct 20</td> --><td>Friday, Oct. 30th</td></tr>
+  <tr><td><!-- x -->PR3</td><td>Maze Search</td><td></td><td>--> Friday, Nov. 13th</td></tr></table>
+  <table><tr><td>Ex3</td><td>Thursday, November 19th</td><td>(in class)</td></tr></table>`;
+  const items = g.parseCourseSite_(html, g.CONFIG.COURSE_SITES[0]);
+  assert.deepEqual(items.map(i => i.title), ['HW3: Classes', 'PR3: Maze Search', 'Exam 3']);
+  assert.equal(items[1].extra.late_due, '2026-11-19T08:00:00.000Z');
 });

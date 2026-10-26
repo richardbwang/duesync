@@ -44,7 +44,7 @@ function load() {
   };
   vm.createContext(ctx);
   const dir = path.join(__dirname, '..', 'src');
-  for (const f of ['Config.js', 'Util.js', 'Store.js', 'Planner.js', 'CalendarSync.js', 'Brightspace.js', 'Gradescope.js', 'Email.js', 'Syllabus.js', 'Digest.js', 'Main.js', 'Setup.js']) {
+  for (const f of ['Config.js', 'Util.js', 'Store.js', 'Planner.js', 'CalendarSync.js', 'Brightspace.js', 'Gradescope.js', 'CourseSite.js', 'Email.js', 'Syllabus.js', 'Digest.js', 'Main.js', 'Setup.js']) {
     vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
   }
   // Most tests exercise the block engine; tests for the default (off) set it explicitly.
